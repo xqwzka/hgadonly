@@ -17,6 +17,6 @@ GitHub Actions (macOS) 自动编译, push 即构建, 打 tag `v*` 出 Release。
 ./build.sh
 ```
 
-产出 `HGAdOnly.dylib` (TrollStore + TrollFools 注入) 和 `HGAdOnly-1.1.1-iphoneos-arm64.deb` (越狱机 rootless)。
+产出 `HGAdOnly.dylib` (TrollStore + TrollFools 注入) 和 `HGAdOnly-1.2.0-iphoneos-arm64.deb` (越狱机 rootless)。
 
 Filter: `com.phoenix.video` (红果短剧) + `com.kylin.readnew` (红果漫剧)。
