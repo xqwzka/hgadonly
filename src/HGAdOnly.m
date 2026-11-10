@@ -1,43 +1,17 @@
-// HGAdOnly.m — v1.1.1 (fix: rewarded-ad skip no longer calls the delegate
-// synchronously inside showRewardedVideoAdWith:params:delegate: — the manager
-// state is not ready at that point and it crashed. Now the reward callback is
-// dispatched async to the main queue, and the close callback is NOT faked
-// (there is no presented ad VC to dismiss).
+// HGAdOnly.m — v1.2.0 (minimal: ad-removal + default 1080p only)
 // 1. 去广告: hongguofn 2.2.2 的 57 组广告开关 (12 个类), 强制返回 NO。
-// 2. 会员伪装: SSUser 的 VIP 状态 getter 强制返回 YES (均已验为 BOOL 返回)。
-//    VIP 专享剧集的播放地址由服务端按账号校验, 服务端不认仍播不了, 以实测为准。
-// 3. 跳过激励广告: 收到播放请求时不播视频, 异步回调 delegate 的
-//    luckyRewardedVideoAdBecomeEffective: (已看够, 可领奖)。奖励是否到账取决
-//    于服务端校验, 以实测为准。
-// 4. 默认清晰度 1080p: 建议清晰度返回 @"1080P", 只改默认建议。
+// 2. 默认清晰度 1080p: 建议清晰度返回 @"1080P", 只改默认建议。
+// 已去掉: 会员伪装、跳过激励广告、屏蔽热更新挂件入口。
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
-#import <dispatch/dispatch.h>
 
 // --- ad flags: always NO ---
 static BOOL hg_returnNO(id self, SEL _cmd) { return NO; }
 
-// --- VIP: always YES ---
-static BOOL hg_returnYES(id self, SEL _cmd) { return YES; }
-static BOOL hg_returnYES1(id self, SEL _cmd, id arg) { return YES; }
-
 // --- default resolution: 1080P ---
 static NSString *hg_resolution1080P(id self, SEL _cmd) { return @"1080P"; }
-
-// --- skip rewarded video ad: grant the reward async, do not fake a close ---
-static void hg_skipRewardedAd(id self, SEL _cmd, id ad, id params, id delegate) {
-    if (!delegate || !ad) return;
-    id d = delegate;
-    id a = ad;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        SEL eff = NSSelectorFromString(@"luckyRewardedVideoAdBecomeEffective:");
-        if (eff && [d respondsToSelector:eff]) {
-            ((void (*)(id, SEL, id))objc_msgSend)(d, eff, a);
-        }
-    });
-}
 
 static void hg_hookFlag(const char *className, const char *selName) {
     Class cls = objc_getClass(className);
@@ -48,28 +22,6 @@ static void hg_hookFlag(const char *className, const char *selName) {
     if (m) method_setImplementation(m, (IMP)hg_returnNO);
     Method cm = class_getClassMethod(cls, sel);
     if (cm) method_setImplementation(cm, (IMP)hg_returnNO);
-}
-
-static void hg_hookYES(const char *className, const char *selName) {
-    Class cls = objc_getClass(className);
-    if (!cls) return;
-    SEL sel = sel_registerName(selName);
-    if (!sel) return;
-    Method m = class_getInstanceMethod(cls, sel);
-    if (m) method_setImplementation(m, (IMP)hg_returnYES);
-    Method cm = class_getClassMethod(cls, sel);
-    if (cm) method_setImplementation(cm, (IMP)hg_returnYES);
-}
-
-static void hg_hookYES1(const char *className, const char *selName) {
-    Class cls = objc_getClass(className);
-    if (!cls) return;
-    SEL sel = sel_registerName(selName);
-    if (!sel) return;
-    Method m = class_getInstanceMethod(cls, sel);
-    if (m) method_setImplementation(m, (IMP)hg_returnYES1);
-    Method cm = class_getClassMethod(cls, sel);
-    if (cm) method_setImplementation(cm, (IMP)hg_returnYES1);
 }
 
 static void hg_hookString(const char *className, const char *selName, IMP repl) {
@@ -148,21 +100,5 @@ static void hg_adonly_init(void) {
         hg_hookFlag(pairs[i][0], pairs[i][1]);
     }
 
-    static const char *vip0[] = {
-        "isVip",
-        "hasAnyVip",
-        "hasAnySubVip",
-        "isAdFreeSubVip",
-        "isPublishSubVip",
-        "isShortStroySubVip",
-        "isAdViPAvailable",
-    };
-    for (size_t i = 0; i < sizeof(vip0) / sizeof(vip0[0]); i++) {
-        hg_hookYES("SSUser", vip0[i]);
-    }
-    hg_hookYES1("SSUser", "isSubVip:");
-    hg_hookYES1("SSUser", "isVipSuperThan:");
-
     hg_hookString("SSShortVideoResolutionStrategy", "suggestResolutionTypeString", (IMP)hg_resolution1080P);
-    hg_hookString("BDMannorUnionRewardedVideoManager", "showRewardedVideoAdWith:params:delegate:", (IMP)hg_skipRewardedAd);
 }
