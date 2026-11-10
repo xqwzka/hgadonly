@@ -32,10 +32,10 @@ jobs:
           mkdir -p deb/var/jb/Library/MobileSubstrate/DynamicLibraries
           cp HGAdOnly.dylib deb/var/jb/Library/MobileSubstrate/DynamicLibraries/
           cp DynamicLibraries/HGAdOnly.plist deb/var/jb/Library/MobileSubstrate/DynamicLibraries/
-          dpkg-deb -b deb HGAdOnly-1.1.1-iphoneos-arm64.deb
-          dpkg-deb --info HGAdOnly-1.1.1-iphoneos-arm64.deb
-          dpkg-deb --contents HGAdOnly-1.1.1-iphoneos-arm64.deb
-          ls -l HGAdOnly.dylib HGAdOnly-1.1.1-iphoneos-arm64.deb
+          dpkg-deb -b deb HGAdOnly-1.2.0-iphoneos-arm64.deb
+          dpkg-deb --info HGAdOnly-1.2.0-iphoneos-arm64.deb
+          dpkg-deb --contents HGAdOnly-1.2.0-iphoneos-arm64.deb
+          ls -l HGAdOnly.dylib HGAdOnly-1.2.0-iphoneos-arm64.deb
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -43,7 +43,7 @@ jobs:
           name: HGAdOnly
           path: |
             HGAdOnly.dylib
-            HGAdOnly-1.1.1-iphoneos-arm64.deb
+            HGAdOnly-1.2.0-iphoneos-arm64.deb
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -51,4 +51,4 @@ jobs:
         with:
           files: |
             HGAdOnly.dylib
-            HGAdOnly-1.1.1-iphoneos-arm64.deb
+            HGAdOnly-1.2.0-iphoneos-arm64.deb
